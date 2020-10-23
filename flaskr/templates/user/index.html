@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Top Stocks{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Ticker</th>
+            <th>Price</th>
+        </tr>
+        {% for TopStocks in TopStocks %}
+        <tr>
+            <td>{{ TopStocks[0] }}</td>
+            <td>{{ TopStocks[1] }}</td>
+            <td>${{ TopStocks[2] }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+    {% if g.user %}
+        <header>
+                <h1>Your Stocks - Total Value {{ value }}</h1>
+        </header>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>StockTicker</th>
+                <th>Amount</th>
+                <th>Price</th>
+                <th>TotalValue</th>
+            </tr>
+            {% for yourStocks in yourStocks %}
+            <tr>
+                <td>{{ yourStocks[0] }}</td>
+                <td>{{ yourStocks[1] }}</td>
+                <td>${{ yourStocks[2] }}</td>
+                <td>${{ yourStocks[3] }}</td>
+                <td>${{ yourStocks[4] }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% else %}
+        <header><h1>Please <a href="{{ url_for('auth.login') }}">log in</a> to See your Portfolio</h1></header>
+    {% endif %}
+{% endblock %}
