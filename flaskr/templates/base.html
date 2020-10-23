@@ -1,28 +1,80 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - Insight</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<nav>
-  <h1>Insight</h1>
-  <ul>
-    {% if g.user %}
-      <li><span>{{ g.user['username'] }}</span>
-    <li><a href="{{ url_for('interactions.index') }}">Home</a>
-      <li><a href="{{ url_for('interactions.buysell') }}">Buy/Sell</a>
-      <li><a href="{{ url_for('interactions.companies') }}">View Companies</a>
-      <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
-    {% else %}
-      <li><a href="{{ url_for('interactions.index') }}">Home</a>
-      <li><a href="{{ url_for('auth.register') }}">Register</a>
-      <li><a href="{{ url_for('auth.login') }}">Log In</a>
-    {% endif %}
-  </ul>
-</nav>
-<section class="content">
-  <header>
-    {% block header %}{% endblock %}
-  </header>
-  {% for message in get_flashed_messages() %}
-    <div class="flash">{{ message }}</div>
-  {% endfor %}
-  {% block content %}{% endblock %}
-</section>
+<html>
+<head>
+    <title>{% block title %}{% endblock %} - Flaskr</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+            integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+            integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../js/scripts.js">
+</head>
+
+<body>
+<div class="wrapper">
+    <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <ul class="navbar-nav">
+            <a class="navbar-brand" href="/"><i class="fas fa-piggy-bank"></i> INSIGHT</a>
+
+        </ul>
+        <!-- Navbar Search-->
+        <!-- Navbar-->
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('interactions.buysell') }}"><i class="fas fa-dollar-sign mr-1"></i>Manage Stocks</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('interactions.companies') }}"><i class="far fa-chart-bar mr-1"></i></i>Companies</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('interactions.index') }}"><i class="fas fa-home mr-1"></i>Home</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="userDropdown" href="#" role="button" data-toggle="dropdown"
+                   aria-haspopup="true" aria-expanded="false"><i class="fas fa-user fa-fw"></i></a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+                    {% if g.user %}
+                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a>
+                    {% else %}
+                    <a class="dropdown-item" href="{{ url_for('auth.login') }}">Login</a>
+                    <a class="dropdown-item" href="{{ url_for('auth.register') }}">Register</a>
+                    {% endif %}
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <header>
+        {% block header %}{% endblock %}
+    </header>
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_content">
+            <main>
+                {% block content %}{% endblock %}
+            </main>
+
+        </div>
+    </div>
+</div>
+<footer class="py-4 bg-light mt-auto">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between small">
+            <div class="text-muted">Copyright &copy; Insight 2020</div>
+            <div>
+                <a href="#">Privacy Policy</a>
+                &middot;
+                <a href="#">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+
+</html>
