@@ -1,15 +1,28 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Register{% endblock %}</h1>
+{% block title %}{% endblock %}
 {% endblock %}
 
 {% block content %}
-  <form method="post">
-    <label for="username">Username</label>
-    <input name="username" id="username">
-    <label for="password">Password</label>
-    <input type="password" name="password" id="password">
-    <input type="submit" value="Register">
-  </form>
+<div class="container wrapper">
+    <div class="row justify-content-md-center">
+        <form class="form-signin" method="post">
+            <div class="row justify-content-md-center">
+                <h1 class="h1 mb-3 font-weight-normal">Register for Free</h1>
+            </div>
+            <div class="row justify-content-md-center">
+                <label for="username" class="sr-only">Username</label>
+                <input id="username" name="username" class="form-control" placeholder="Username" required autofocus>
+                <label for="password" class="sr-only">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Password"
+                       required>
+                <button class="btn btn-lg btn-primary btn-block" type="submit" value="Register">Register</button>
+            </div>
+            <div class="row justify-content-md-center">
+                <p>Already have an account? Login <a href="{{ url_for('auth.login') }}">here</a></p>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

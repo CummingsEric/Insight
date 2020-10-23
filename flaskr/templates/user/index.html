@@ -20,6 +20,11 @@
     {% endfor %}
     </table>
     {% if g.user %}
+        {% if yourStocks|length == 0 %}
+        <header>
+                <h1>You have no stocks, Visit <a href="{{ url_for('interactions.buysell') }}">Manage Stocks</a> to purchace some</h1>
+        </header>
+        {% else %}
         <header>
                 <h1>Your Stocks - Total Value {{ value }}</h1>
         </header>
@@ -41,6 +46,7 @@
             </tr>
         {% endfor %}
         </table>
+        {% endif %}
     {% else %}
         <header><h1>Please <a href="{{ url_for('auth.login') }}">log in</a> to See your Portfolio</h1></header>
     {% endif %}

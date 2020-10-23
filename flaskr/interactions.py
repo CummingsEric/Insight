@@ -4,60 +4,54 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from flaskr.auth import login_required
-from flaskr.db import get_db
+from flaskr.db import get_db, get_current_stocks, get_user_stocks, sell_stock, purchase_stock
 
 bp = Blueprint('interactions', __name__)
 
 @bp.route('/')
 def index():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute(
-        'SELECT C.Name, C.StockTicker, P.Price From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
-         'FROM Stock S JOIN '
-         '(SELECT StockId, Max(date) as Date '
-         'FROM Stock '
-         'GROUP BY StockId) F '
-         'ON S.Date = F.Date and S.StockId = F.StockId) P ON C.CompanyId = P.CompanyId;'
-    )
-    TopStocks = cursor.fetchall()
+    TopStocks = get_current_stocks()
     user_id = session.get('user_id')
-    yourStocks = None
+    yourStocks = get_user_stocks(g.user)
     value = 0
-    if user_id:
-        query = (
-            'Select  Name, StockTicker, Amount, Price, (Amount * Price) as TotalValue FROM '
-            '(Select StockId, Amount From Portfolio Where UserId=%s) A JOIN '
-            '(SELECT P.StockId, C.Name, C.StockTicker, P.Price From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
-            'FROM Stock S JOIN '
-            '(SELECT StockId, Max(date) as Date '
-            'FROM Stock '
-            'GROUP BY StockId) F '
-            'ON S.Date = F.Date and S.StockId = F.StockId) P ON C.CompanyId = P.CompanyId) B '
-            'ON A.StockId = B.StockId;')
-        cursor.execute(query, (user_id,))
-        yourStocks = cursor.fetchall()
-
+    if(yourStocks!=[]):
         for i in yourStocks:
             value+=i[4]
     return render_template('user/index.html', TopStocks=TopStocks, yourStocks=yourStocks, value=value)
 
 @bp.route('/buysell')
+@login_required
 def buysell():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute(
-        'SELECT * FROM Company'
-    )
-    TopStocks = cursor.fetchall()
-    return render_template('user/buysell.html')
+    TopStocks = get_current_stocks()
+    user_id = session.get('user_id')
+    yourStocks = get_user_stocks(g.user)
+    value = 0
+    if (yourStocks != []):
+        for i in yourStocks:
+            value += i[4]
+    return render_template('user/buysell.html', TopStocks=TopStocks, yourStocks=yourStocks, value=value)
+
+@bp.route('/buy', methods=('GET', 'POST'))
+def buy():
+    if request.method == 'POST':
+        stockId = request.form['stockId']
+        amount = request.form['amount']
+        purchase_stock(stockId, g.user, amount)
+    return redirect(url_for('interactions.buysell'))
+
+@bp.route('/sell', methods=('GET', 'POST'))
+def sell():
+    if request.method == 'POST':
+        stockId = request.form['stockId']
+        amount = request.form['amount']
+        sell_stock(stockId, g.user, amount)
+    return redirect(url_for('interactions.buysell'))
 
 @bp.route('/companies')
+@login_required
 def companies():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute(
-        'SELECT * FROM Company'
-    )
-    TopStocks = cursor.fetchall()
     return render_template('user/companies.html')
+
+@bp.route('/nothing')
+def nothing():
+    return render_template('extras/default.html')
