@@ -1,9 +1,25 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Companies{% endblock %}</h1>
+<h1>{% block title %}Companies{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-<h1>Companies</h1>
+<h1>Company Selector</h1>
+<div class="row align-items-center">
+    <form action="/companies" method="post">
+        <div class="row">
+            <h1 class="h3 mb-3 font-weight-normal">Select Company</h1>
+            <select class="custom-select" name="companyId">
+                {% for company in company_names %}
+                <option value="{{ company[1] }}">{{ company[0] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div class="row">
+            <button class="btn btn-lg btn-info btn-block" type="submit">Select</button>
+        </div>
+    </form>
+</div>
 {% endblock %}
