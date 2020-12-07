@@ -40,7 +40,7 @@ def get_current_stocks():
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
-        'SELECT C.Name, C.StockTicker, P.Price From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
+        'SELECT C.Name, C.StockTicker, P.Price, P.StockId From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
         'FROM Stock S JOIN '
         '(SELECT StockId, Max(date) as Date '
         'FROM Stock '
@@ -75,38 +75,76 @@ def get_user_stocks(userId):
 
 
 def purchase_stock(stockId, userId, amount):
-    db = get_db()
-    cursor = db.cursor()
-    yourStocks = None
-    # query = ('INSERT INTO Transactions (UserId, StockId, Delta) VALUES (%s,%s,%s);')
-    # ursor.execute(query, (userId,stockId,amount,))
-    query = ('UPDATE Portfolio '
-             'SET Amount = Amount + %s '
-             'WHERE UserId=%s and StockId=%s;')
-    cursor.execute(query, (amount, userId, stockId,))
-    cursor.close()
-    return
+    try:
+        db = get_db()
+        cursor = db.cursor(buffered=True)
+
+        # Transaction is Read Committed because this transaction should be accurate, but we also want to know if the
+        # amount has been updated so that it is accurately reflected, unlike repeatable read which won't update until
+        # the transaction is over.
+        db.start_transaction(isolation_level='READ COMMITTED')
+
+        query = """
+        SELECT UserId, StockId FROM Portfolio
+        WHERE UserId=%s AND StockId=%s;
+        """
+        cursor.execute(query, (userId, stockId,))
+        result = cursor.fetchall()
+        if len(result) == 0:
+            query = ('INSERT INTO Portfolio (UserId, StockId, Amount) VALUES (%s,%s,%s);')
+            cursor.execute(query, (userId,stockId,amount,))
+        else:
+            query = ('UPDATE Portfolio '
+                     'SET Amount = Amount + %s '
+                     'WHERE UserId=%s and StockId=%s;')
+            cursor.execute(query, (amount, userId, stockId,))
+        db.commit()
+    except mysql.connector.errors.Error as e:
+        db.rollback()
+        print("Rolling back...")
+        print(e)
+    finally:
+        cursor.close()
 
 
 def sell_stock(stockId, userId, amount):
     # find the amount of stock the user has
-    db = get_db()
-    cursor = db.cursor()
-    query = ('SELECT Amount FROM Portfolio WHERE UserId=%s and StockId=%s;')
-    cursor.execute(query, (userId, stockId))
-    owned = cursor.fetchall()[0][0]
-    namount = -amount
-    if (owned + namount >= 0):
-        # only sell if they have enough
+    try:
+        db = get_db()
+        cursor = db.cursor(buffered=True)
 
-        # query = ('INSERT INTO Transactions (UserId, StockId, Delta) VALUES (%s,%s,%s);')
-        # cursor.execute(query, (userId, stockId, namount,))
-        query = ('UPDATE Portfolio '
-                 'SET Amount = Amount - %s '
-                 'WHERE UserId=%s and StockId=%s;')
-        cursor.execute(query, (amount, userId, stockId,))
+        # Transaction is Read Committed because this transaction should be accurate, but we also want to know if the
+        # amount has been updated so that it is accurately reflected, unlike repeatable read which won't update until
+        # the transaction is over.
+        db.start_transaction(isolation_level='READ COMMITTED')
+
+        query = ('SELECT Amount FROM Portfolio WHERE UserId=%s and StockId=%s;')
+        cursor.execute(query, (userId, stockId))
+        owned = cursor.fetchall()[0][0]
+        namount = -int(amount)
+        if (owned + namount > 0):
+            # only sell if they have enough
+
+            # query = ('INSERT INTO Transactions (UserId, StockId, Delta) VALUES (%s,%s,%s);')
+            # cursor.execute(query, (userId, stockId, namount,))
+            query = ('UPDATE Portfolio '
+                     'SET Amount = Amount - %s '
+                     'WHERE UserId=%s and StockId=%s;')
+            cursor.execute(query, (amount, userId, stockId,))
+        elif owned + namount == 0:
+            query = """
+            DELETE FROM Portfolio
+            WHERE UserId=%s AND StockId=%s;
+            """
+            cursor.execute(query, (userId, stockId,))
+        db.commit()
+        print("Transaction complete")
+    except mysql.connector.errors.Error as e:
+        db.rollback()
+        print("Rolling back...")
+        print(e)
+    finally:
         cursor.close()
-    return
 
 
 def get_companies():
@@ -142,7 +180,9 @@ def get_stock_graph(company_id):
         db = get_db()
         cursor = db.cursor(buffered=True)
 
-        db.start_transaction(isolation_level='REPEATABLE READ', readonly=True)
+        # Transaction is Read committed because this transaction should be accurate, but it doesn't need to be higher
+        # because we don't need to worry about subsequent reads.
+        db.start_transaction(isolation_level='READ COMMITTED', readonly=True)
 
         sql_statement = """
         SELECT Date, Price
