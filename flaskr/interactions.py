@@ -8,7 +8,7 @@ import datetime as dt
 
 from flaskr.auth import login_required
 from flaskr.db import get_db, get_current_stocks, get_user_stocks, sell_stock, purchase_stock, get_companies, \
-    get_company_info, get_stock_graph
+    get_company_info, get_stock_graph, get_leaderboard
 
 bp = Blueprint('interactions', __name__)
 
@@ -18,11 +18,14 @@ def index():
     TopStocks = get_current_stocks()
     user_id = session.get('user_id')
     yourStocks = get_user_stocks(g.user)
+    leaderboard = get_leaderboard()
+    names = [i[0] for i in leaderboard]
+    scores = [i[1] for i in leaderboard]
     value = 0
     if (yourStocks != []):
         for i in yourStocks:
             value += i[4]
-    return render_template('user/index.html', TopStocks=TopStocks, yourStocks=yourStocks, value=value)
+    return render_template('user/index.html', TopStocks=TopStocks, yourStocks=yourStocks, value=value, names=names, scores=scores)
 
 
 @bp.route('/buysell')

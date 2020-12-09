@@ -5,6 +5,10 @@ import sqlalchemy as sqla
 from flask import current_app, g
 from flask.cli import with_appcontext
 
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
+from flaskr.orm_classes import Company
 
 @click.command('start_db')
 @with_appcontext
@@ -20,6 +24,14 @@ def get_db():
                                        database='insight_database', autocommit=True)
     return g.db
 
+def get_session():
+    if 'session' not in g:
+        engine = create_engine('mysql+mysqldb://root:stonks@34.68.197.158/insight_database')
+        Session = sessionmaker(bind=engine)
+        g.session = Session()
+
+    return g.session
+
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -30,6 +42,7 @@ def close_db(e=None):
 
 def init_db():
     db = get_db()
+    session = get_session()
 
 
 def init_app(app):
@@ -60,7 +73,7 @@ def get_user_stocks(userId):
     user_id = userId
     yourStocks = None
     query = (
-        'Select  Name, StockTicker, Amount, Price, (Amount * Price) as TotalValue FROM '
+        'Select  Name, StockTicker, Amount, Price, round((Amount * Price),2) as TotalValue FROM '
         '(Select StockId, Amount From Portfolio Where UserId=%s) A JOIN '
         '(SELECT P.StockId, C.Name, C.StockTicker, P.Price From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
         'FROM Stock S JOIN '
@@ -73,6 +86,29 @@ def get_user_stocks(userId):
     yourStocks = cursor.fetchall()
     cursor.close()
     return yourStocks
+
+def get_leaderboard():
+    db = get_db()
+    cursor = db.cursor()
+    leaderboard = None
+    query = (
+        'Select UserId, sum(TotalValue) as TotalValue From'
+        '(Select UserId, round((Amount * Price),2) as TotalValue FROM '
+        '(Select UserId, StockId, Amount From Portfolio) A JOIN '
+        '(SELECT P.StockId, C.Name, C.StockTicker, P.Price From Company C JOIN (SELECT S.StockId, S.CompanyId, S.Price '
+        'FROM Stock S JOIN '
+        '(SELECT StockId, Max(date) as Date '
+        'FROM Stock '
+        'GROUP BY StockId) F '
+        'ON S.Date = F.Date and S.StockId = F.StockId) P ON C.CompanyId = P.CompanyId) B '
+        'ON A.StockId = B.StockId) T '
+        'Group By UserId '
+        'Order By TotalValue DESC '
+        'Limit 5;')
+    cursor.execute(query)
+    leaderboard = cursor.fetchall()
+    cursor.close()
+    return leaderboard
 
 
 def purchase_stock(stockId, userId, amount):
@@ -149,15 +185,8 @@ def sell_stock(stockId, userId, amount):
 
 
 def get_companies():
-    db = get_db()
-    cursor = db.cursor()
-    query = """
-    SELECT Name, CompanyId
-    FROM Company
-    ORDER BY Name ASC;
-    """
-    cursor.execute(query)
-    result = cursor.fetchall()
+    orm_session = get_session()
+    result = orm_session.query(Company.Name, Company.CompanyId).order_by(Company.Name).all()
     return result
 
 

@@ -1,10 +1,10 @@
 import functools
-
+from flaskr.orm_classes import User
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 
-from flaskr.db import get_db
+from flaskr.db import get_db, get_session
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -13,8 +13,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db()
-        cursor = db.cursor()
+        orm_session = get_session()
         error = None
 
         if not username:
@@ -22,23 +21,15 @@ def register():
         elif not password:
             error = 'Password is required.'
         else:
-            cursor.execute(
-                'SELECT UserId FROM User WHERE UserId = %s;', (username,)
-            )
-            if cursor.fetchone() is not None:
+            if len(orm_session.query(User.UserId).filter(User.UserId == username).all()) > 0:
                 error = 'User {} is already registered.'.format(username)
 
         if error is None:
-            cursor.execute(
-                'INSERT INTO User (UserId, HashedPassword) VALUES (%s, %s)',
-                (username, password)
-            )
-            db.commit()
-            cursor.close()
+            new_user = User(UserId=username, HashedPassword=password)
+            orm_session.add(new_user)
+            orm_session.commit()
             return redirect(url_for('auth.login'))
 
-        flash(error)
-        cursor.close()
     return render_template('auth/register.html')
 
 @bp.route('/login', methods=('GET', 'POST'))
@@ -46,22 +37,18 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db()
-        cursor = db.cursor()
+        orm_session = get_session()
         error = None
-        cursor.execute(
-            'SELECT * FROM User WHERE UserId = %s;', (username,)
-        )
-        user = cursor.fetchone()
+        user = orm_session.query(User).filter(User.UserId == username).first()
 
         if user is None:
             error = 'Incorrect username.'
-        elif not user[1] == password:
+        elif not user.HashedPassword == password:
             error = 'Incorrect password.'
 
         if error is None:
             session.clear()
-            session['user_id'] = user[0]
+            session['user_id'] = user.UserId
             return redirect(url_for('index'))
 
         flash(error)
@@ -75,12 +62,9 @@ def load_logged_in_user():
     if user_id is None:
         g.user = None
     else:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            'SELECT * FROM User WHERE UserId = %s;', (user_id,)
-        )
-        g.user = cursor.fetchone()[0]
+        orm_session = get_session()
+        user = orm_session.query(User.UserId).filter(User.UserId == user_id).first()
+        g.user = user[0]
 
 @bp.route('/logout')
 def logout():

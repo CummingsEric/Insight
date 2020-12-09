@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-    <table>
+    <table class="table">
         <tr>
             <th>Name</th>
             <th>Ticker</th>
@@ -19,6 +19,23 @@
         </tr>
     {% endfor %}
     </table>
+    <header>
+        <h1>Leaderboards</h1>
+    </header>
+    <table class="table">
+        <tr>
+            {% for name in names %}
+            <th>{{ name }}</th>
+            {% endfor %}
+        </tr>
+
+        <tr>
+            {% for score in scores %}
+            <td>{{ score }}</td>
+            {% endfor %}
+        </tr>
+
+    </table>
     {% if g.user %}
         {% if yourStocks|length == 0 %}
         <header>
@@ -28,7 +45,7 @@
         <header>
                 <h1>Your Stocks - Total Value {{ value }}</h1>
         </header>
-        <table>
+        <table class="table">
             <tr>
                 <th>Name</th>
                 <th>StockTicker</th>
