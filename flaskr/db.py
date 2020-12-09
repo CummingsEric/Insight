@@ -1,6 +1,7 @@
 import mysql.connector
 
 import click
+import sqlalchemy as sqla
 from flask import current_app, g
 from flask.cli import with_appcontext
 
