@@ -38,6 +38,7 @@ def buysell():
     if (yourStocks != []):
         for i in yourStocks:
             value += i[4]
+    value = round(value, 2)
     return render_template('user/buysell.html', TopStocks=TopStocks, yourStocks=yourStocks, value=value)
 
 
